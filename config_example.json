@@ -1,0 +1,15 @@
+{
+  "server": {
+    "token": "1234"
+  },
+  "client": {
+    "host": "localhost:8080",
+    "token": "1234"
+  },
+  "mqtt": {
+    "host": "192.168.1.2",
+    "port": 1883,
+    "username": "mqtt",
+    "password": "secret"
+  }
+}

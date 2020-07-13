@@ -1,0 +1,23 @@
+{
+  "name": "home-assistant-watcher",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./src",
+    "dev": "nodemon ./src"
+  },
+  "author": "Karl Ek",
+  "repository": {
+    "url": "https://github.com/karlenek/home-assistant-watcher"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "convict": "^6.0.0",
+    "mqtt": "^4.1.0",
+    "ws": "^7.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}
