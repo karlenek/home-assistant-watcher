@@ -57,9 +57,11 @@ const config = convict({
 });
 
 const configPath = path.join(__dirname, '../', config.get('configPath'));
+console.log(`Using configuration from ${configPath}`);
 
 if (fs.existsSync(configPath)) {
   config.loadFile(configPath);
+  console.log('Loaded configuration file');
 }
 
 module.exports = config.getProperties();
