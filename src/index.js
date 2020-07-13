@@ -93,6 +93,10 @@ client.on('message', (topic, buffer) => {
   }
 });
 
+client.on('error', (err) => {
+  log.error(err);
+});
+
 client.subscribe(HASS_STATUS_TOPIC);
 client.subscribe(HASS_SYSTEM_STATUS);
 
