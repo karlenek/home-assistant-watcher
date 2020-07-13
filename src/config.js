@@ -6,6 +6,7 @@ const config = convict({
   configPath: {
     format: 'String',
     default: './config.json',
+    env: 'CONFIG_PATH',
   },
   client: {
     host: {
