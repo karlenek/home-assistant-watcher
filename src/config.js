@@ -12,46 +12,56 @@ const config = convict({
     host: {
       format: 'String',
       default: 'localhost:8040',
+      env: 'CLIENT_HOST',
     },
     token: {
       format: 'String',
       default: '1234',
+      env: 'CLIENT_TOKEN',
     },
     retryTime: {
       format: 'Number',
       default: 10,
+      env: 'CLIENT_RETRY_TIME',
     },
     tls: {
       format: 'Boolean',
       default: false,
+      env: 'CLIENT_TLS',
     },
   },
   server: {
     port: {
       format: 'Number',
       default: 8040,
+      env: 'SERVER_PORT',
     },
     token: {
       format: 'String',
-      default: '1234'
+      default: '1234',
+      env: 'SERVER_TOKEN',
     }
   },
   mqtt: {
     host: {
       format: 'String',
       default: 'localhost',
+      env: 'MQTT_HOST'
     },
     port: {
       format: 'String',
       default: 1883,
+      env: 'MQTT_PORT',
     },
     username: {
       format: 'String',
       default: undefined,
+      env: 'MQTT_USERNAME',
     },
     password: {
       format: 'String',
       default: undefined,
+      env: 'MQTT_PASSWORD',
     },
   },
 });
@@ -63,5 +73,7 @@ if (fs.existsSync(configPath)) {
   config.loadFile(configPath);
   console.log('Loaded configuration file');
 }
+
+config.validate();
 
 module.exports = config.getProperties();
