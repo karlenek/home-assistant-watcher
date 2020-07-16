@@ -72,6 +72,7 @@ class Client {
           break;
       }
     } catch (err) {
+      log.error('[SERVER]:');
       log.error(err);
     }
   }
@@ -127,6 +128,7 @@ class WatchServer {
           const currentStatus = await this.onRequestStatus();
           return currentStatus;
         } catch (err) {
+          log.error('[SERVER]:');
           log.error(err);
         }
       };

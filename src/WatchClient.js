@@ -187,7 +187,7 @@ class WatchClient extends EventEmitter {
       this._setStatus({
         online: false,
         ok: false,
-        status: this._disconnectReason,
+        status: this._disconnectReason || 'Not connected',
       });
 
       this._disconnectReason = null;
@@ -203,6 +203,7 @@ class WatchClient extends EventEmitter {
     });
   
     this._ws.on('error', (err) => {
+      log.error(`[CLIENT]: ${err} (${err.code ? err.code : ''})`);
       log.error(err);
     });
 
