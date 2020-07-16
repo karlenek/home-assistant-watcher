@@ -99,11 +99,11 @@ class Client {
 }
 
 class WatchServer {
-  constructor({ accessToken }) {
+  constructor({ accessToken, port = 8040 }) {
     this._clients = [];
 
     this._wss = new WebSocket.Server({
-      port: 8080,
+      port,
     });
 
     this._wss.on('connection', (ws) => {

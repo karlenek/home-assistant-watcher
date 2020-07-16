@@ -11,7 +11,7 @@ const config = convict({
   client: {
     host: {
       format: 'String',
-      default: 'localhost:8080',
+      default: 'localhost:8040',
     },
     token: {
       format: 'String',
@@ -29,7 +29,7 @@ const config = convict({
   server: {
     port: {
       format: 'Number',
-      default: 8080,
+      default: 8040,
     },
     token: {
       format: 'String',
