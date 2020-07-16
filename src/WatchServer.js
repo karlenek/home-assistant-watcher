@@ -81,6 +81,11 @@ class Client {
       this._ws.pong();
     });
 
+    this._ws.on('close', () => {
+      this._isAuthenticated = false;
+      this._ws.removeAllListeners();
+    });
+
     this._onMessage = this._onMessage.bind(this);
     this._ws.on('message', this._onMessage);
   }
@@ -101,14 +106,20 @@ class Client {
 class WatchServer {
   constructor({ accessToken, port = 8040 }) {
     this._clients = [];
+    this._accessToken = accessToken;
+    this._port = port;
+  }
 
+  start() {
     this._wss = new WebSocket.Server({
-      port,
+      port: this._port,
     });
+
+    log.info(`[SERVER]: Server listening on port ${this._port}`);
 
     this._wss.on('connection', (ws) => {
       const client = new Client(ws, {
-        accessToken,
+        accessToken: this._accessToken,
       });
 
       client.onRequestStatus = async () => {
@@ -121,6 +132,11 @@ class WatchServer {
       };
 
       this._clients.push(ws);
+
+      ws.on('close', () => {
+        this._clients = this._clients.filter(c => c !== client);
+        ws.removeAllListeners();
+      });
 
       setTimeout(() => {
         // Terminate the connection if the client has not authenticated within set timeout

@@ -9,6 +9,11 @@ const config = convict({
     env: 'CONFIG_PATH',
   },
   client: {
+    enabled: {
+      format: 'Boolean',
+      default: true,
+      env: 'CLIENT_ENABLED',
+    },
     host: {
       format: 'String',
       default: 'localhost:8040',
@@ -31,6 +36,11 @@ const config = convict({
     },
   },
   server: {
+    enabled: {
+      format: 'Boolean',
+      default: true,
+      env: 'SERVER_ENABLED',
+    },
     port: {
       format: 'Number',
       default: 8040,
@@ -49,7 +59,7 @@ const config = convict({
       env: 'MQTT_HOST'
     },
     port: {
-      format: 'String',
+      format: 'Number',
       default: 1883,
       env: 'MQTT_PORT',
     },
@@ -62,6 +72,16 @@ const config = convict({
       format: 'String',
       default: undefined,
       env: 'MQTT_PASSWORD',
+    },
+    discoveryPrefix: {
+      format: 'String',
+      default: 'hass',
+      env: 'MQTT_DISCOVERY_PREFIX',
+    },
+    hassStatusTopic: {
+      format: 'String',
+      default: 'hass/status',
+      env: 'MQTT_STATUS_TOPIC',
     },
   },
 });

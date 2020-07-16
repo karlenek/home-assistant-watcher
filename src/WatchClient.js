@@ -17,6 +17,7 @@ class WatchClient extends EventEmitter {
       retryTime: config.retryTime || 10,
     };
 
+    this._started = false;
     this._connected = false;
     this._connecting = false;
     this._retryConnection = true;
@@ -33,7 +34,6 @@ class WatchClient extends EventEmitter {
 
     this._onMessage = this._onMessage.bind(this);
 
-    this.connect();
     this.on(CONNECTED_EVENT, () => this._watchConnection());
     this.on(CONNECTED_EVENT, () => this._watchStatus());
   }
@@ -106,7 +106,7 @@ class WatchClient extends EventEmitter {
   }
 
   _login() {
-    log.debug('Authenticating...')
+    log.debug('[CLIENT]: Authenticating...')
     this._ws.send(JSON.stringify({
       type: 'auth',
       accessToken: this._config.accessToken,
@@ -121,14 +121,14 @@ class WatchClient extends EventEmitter {
   }
   
   _authFailed() {
-    log.debug(`Failed connecting to ${this._config.host}, invalid apiKey`);
+    log.warn(`[CLIENT]: Failed connecting to ${this._config.host}, invalid apiKey`);
     this._retryConnection = false;
     this._disconnectReason = 'Failed to authenticate with server';
     this._ws.close();
   }
   
   _authSucceded() {
-    log.debug(`Authenticated to ${this._config.host}`);
+    log.debug(`[CLIENT]: Authenticated to ${this._config.host}`);
     this._connected = true;
     this.emit(CONNECTED_EVENT);
   }
@@ -172,7 +172,6 @@ class WatchClient extends EventEmitter {
     this._ws = new WebSocket(`${this._config.tls ? 'wss' : 'ws'}://${this._config.host}/api/websocket`);
 
     this._ws.on('open', () => {
-      log.debug('Connected to server');
       this._disconnectReason = 'Connection lost';
     });
     
@@ -194,11 +193,11 @@ class WatchClient extends EventEmitter {
       this._disconnectReason = null;
   
       if (!this._retryConnection) {
-        log.debug('Not connected to server, no reconnection attempts will be made.');
+        log.debug('[CLIENT]: Not connected, no reconnection attempts will be made.');
         return;
       }
   
-      log.debug(`Not connected to server, retrying in ${this._config.retryTime} seconds`);
+      log.debug(`[CLIENT]: Not connected, retrying in ${this._config.retryTime} seconds`);
   
       setTimeout(() => { this.connect() }, this._config.retryTime * 1000);
     });

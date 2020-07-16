@@ -6,11 +6,14 @@ const config = require('./config');
 const log = require('./logger');
 const { version, author } = require('../package.json');
 
-
 const watchServer = new WatchServer({
   accessToken: config.server.token,
   port: config.server.port,
 });
+
+if (config.server.enabled) {
+  watchServer.start();
+}
 
 const watchClient = new WatchClient({
   accessToken: config.client.token,
@@ -18,6 +21,11 @@ const watchClient = new WatchClient({
   tls: config.client.tls,
   retryTime: config.client.retryTime,
 });
+
+if (config.client.enabled) {
+  watchClient.connect();
+}
+
 
 const client = mqtt.connect(`mqtt://${config.mqtt.host}`, {
   username: config.mqtt.username,
@@ -29,13 +37,13 @@ const OBJECT_ID = config.client.host.replace(/[\.\-\:]/g, '_');
 const HASS_SYSTEM_STATUS_GET = 'hass/system/status/get';
 const HASS_SYSTEM_STATUS = 'hass/system/status';
 
-const HASS_STATUS_TOPIC = 'hass/status';
+const HASS_STATUS_TOPIC = config.mqtt.hassStatusTopic;
 const HASS_STATE_TOPIC = `hasswatcher/${OBJECT_ID}/status/state`;
 const HASS_AVAILABILITY_TOPIC = `hasswatcher/${OBJECT_ID}/status`;
 
 function sendDiscovery() {
-  log.debug('Sending discovery to home assistant');
-  client.publish(`hass/binary_sensor/${OBJECT_ID}/status/config`, JSON.stringify({
+  log.debug('[MQTT]: Sending discovery to home assistant');
+  client.publish(`${config.mqtt.discoveryPrefix}/binary_sensor/${OBJECT_ID}/status/config`, JSON.stringify({
     name: `${OBJECT_ID}_status`,
     unique_id: `${OBJECT_ID}_status`,
     device_class: 'connectivity',
@@ -65,7 +73,7 @@ function sendAvailableStatus() {
 }
 
 function sendWatcherStatus() {
-  if (client.connected) {
+  if (watchClient.isConnected() && client.connected) {
     const { status: message, online, ok } = watchClient.getStatus();
     const status = online && ok ? 'ON' : 'OFF';
 
@@ -75,14 +83,18 @@ function sendWatcherStatus() {
     }));
   }
 }
-setInterval(() => sendWatcherStatus(), 15000);
+if (config.client.enabled) {
+  setInterval(() => sendWatcherStatus(), 15000);
+}
 
 
 client.on('connect', () => {
-  log.info('Connected to mqtt broker');
+  log.info('[MQTT]: Connected to broker');
 
-  sendDiscovery();
-  sendAvailableStatus();
+  if (config.client.enabled) {
+    sendDiscovery();
+    sendAvailableStatus();
+  }
 });
 
 client.on('message', (topic, buffer) => {
@@ -94,6 +106,7 @@ client.on('message', (topic, buffer) => {
 });
 
 client.on('error', (err) => {
+  log.error('[MQTT]:');
   log.error(err);
 });
 
@@ -151,17 +164,18 @@ watchServer.onRequestStatus = async () => {
       }
     });
   } catch (err) {
+    log.error('[SERVER]:');
     log.error(err);
   }
   return status;
 }
 
 watchClient.on(CONNECTED_EVENT, () => {
-  log.info('Connected to watch server');
+  log.info('[CLIENT]: Connected to remote server');
 });
 
 watchClient.on(STATUS_EVENT, (data) => {
-  log.info('Status changed');
+  log.info(`[CLIENT]: New remote status: "${data.status}"`);
   log.debug(data);
   sendWatcherStatus();
 });
