@@ -6,8 +6,9 @@ const { version } = require('../package.json');
 
 const AUTH_TIMEOUT = 5000;
 
-class Client {
+class Client extends EventEmitter{
   constructor(ws, { accessToken }) {
+    super();
     this._isAuthenticated =  false;
     this._accessToken = accessToken;
     this._ws = ws;
@@ -50,6 +51,8 @@ class Client {
       type: 'auth_ok',
       version,
     }));
+
+    this.emit(Client.AUTHENTICATED_EVENT);
   }
 
   async _handleStatusRequest() {
@@ -89,6 +92,7 @@ class Client {
     this._ws.on('close', () => {
       this._isAuthenticated = false;
       this._ws.removeAllListeners();
+      this.emit(Client.DISCONNECTED_EVENT);
     });
 
     this._onMessage = this._onMessage.bind(this);
@@ -111,6 +115,9 @@ class Client {
     return this._id;
   }
 }
+
+Client.AUTHENTICATED_EVENT = 'authenticated';
+Client.DISCONNECTED_EVENT = 'disconnected';
 
 class WatchServer extends EventEmitter {
   constructor({ accessToken, port = 8040 }) {
@@ -142,20 +149,28 @@ class WatchServer extends EventEmitter {
           log.error(err);
         }
       };
-      
-      this._clients.set(clientId, ws);
 
-      this.emit(WatchServer.CLIENT_CONNECTED, clientId);
+      let authenticated = false;
 
-      ws.on('close', () => {
-        ws.removeAllListeners();
-        this._clients.delete(clientId)
-        this.emit(WatchServer.CLIENT_DISCONNECTED, clientId);
+      client.on(Client.AUTHENTICATED_EVENT, () => {
+        // Add the client and notify that it has been connected and authenticated
+        authenticated = true;
+        this._clients.set(clientId, ws);
+        this.emit(WatchServer.CLIENT_CONNECTED, clientId);
+      });
+
+      client.on(Client.DISCONNECTED_EVENT, () => {
+        this._clients.delete(clientId);
+  
+        // If the client never was authenticated, no need to notify
+        if (authenticated) {
+          this.emit(WatchServer.CLIENT_DISCONNECTED, clientId);
+        }
       });
 
       setTimeout(() => {
         // Terminate the connection if the client has not authenticated within set timeout
-        if (!client.isAuthenticated()) {
+        if (!authenticated) {
           client.close();
           this._clients.delete(clientId);
         }
