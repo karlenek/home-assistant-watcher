@@ -41,6 +41,8 @@ const HASS_STATUS_TOPIC = config.mqtt.hassStatusTopic;
 const HASS_STATE_TOPIC = `hasswatcher/${OBJECT_ID}/status/state`;
 const HASS_AVAILABILITY_TOPIC = `hasswatcher/${OBJECT_ID}/status`;
 
+const SERVER_CONNECTIONS_TOPIC = `hasswatcher/server/connections`;
+
 function sendDiscovery() {
   log.debug('[MQTT]: Sending discovery to home assistant');
   client.publish(`${config.mqtt.discoveryPrefix}/binary_sensor/${OBJECT_ID}/status/config`, JSON.stringify({
@@ -87,6 +89,17 @@ if (config.client.enabled) {
   setInterval(() => sendWatcherStatus(), 15000);
 }
 
+function sendServerConnections() {
+  if (client.connected) {
+    const connections = watchServer.getClients();
+
+    client.publish(SERVER_CONNECTIONS_TOPIC, JSON.stringify({
+      connections,
+      count: connections.length,
+    }));
+  }
+}
+
 
 client.on('connect', () => {
   log.info('[MQTT]: Connected to broker');
@@ -94,6 +107,10 @@ client.on('connect', () => {
   if (config.client.enabled) {
     sendDiscovery();
     sendAvailableStatus();
+  }
+
+  if (config.server.enabled) {
+    sendServerConnections();
   }
 });
 
@@ -112,6 +129,21 @@ client.on('error', (err) => {
 
 client.subscribe(HASS_STATUS_TOPIC);
 client.subscribe(HASS_SYSTEM_STATUS);
+
+watchServer.on(WatchServer.CLIENT_CONNECTED, (clientId) => {
+  const connections = watchServer.getClients();
+  log.info(`[SERVER]: New client connected: ${clientId}`);
+  log.info(`[SERVER]: Connected clients: ${watchServer.getConnectionCount()}`);
+
+  sendServerConnections();
+});
+watchServer.on(WatchServer.CLIENT_DISCONNECTED, (clientId) => {
+  const connections = watchServer.getClients();
+  log.info(`[SERVER]: Client disconnected: ${clientId}`);
+  log.info(`[SERVER]: Connected clients: ${watchServer.getConnectionCount()}`);
+
+  sendServerConnections();
+});
 
 watchServer.onRequestStatus = async () => {
   let status = {

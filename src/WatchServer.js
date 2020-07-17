@@ -1,4 +1,6 @@
+const { EventEmitter } = require('events');
 const WebSocket = require('ws');
+const { v4: uuidv4 } = require('uuid');
 const log = require('./logger');
 const { version } = require('../package.json');
 
@@ -9,6 +11,8 @@ class Client {
     this._isAuthenticated =  false;
     this._accessToken = accessToken;
     this._ws = ws;
+
+    this._id = uuidv4();
 
     this._setupListeners();
     this._requestAuthentication();
@@ -102,11 +106,16 @@ class Client {
   close() {
     this._ws.terminate();
   }
+
+  getId() {
+    return this._id;
+  }
 }
 
-class WatchServer {
+class WatchServer extends EventEmitter {
   constructor({ accessToken, port = 8040 }) {
-    this._clients = [];
+    super();
+    this._clients = new Map();
     this._accessToken = accessToken;
     this._port = port;
   }
@@ -118,10 +127,11 @@ class WatchServer {
 
     log.info(`[SERVER]: Server listening on port ${this._port}`);
 
-    this._wss.on('connection', (ws) => {
+    this._wss.on('connection', (ws, ...args) => {
       const client = new Client(ws, {
         accessToken: this._accessToken,
       });
+      const clientId = client.getId();
 
       client.onRequestStatus = async () => {
         try {
@@ -132,22 +142,33 @@ class WatchServer {
           log.error(err);
         }
       };
+      
+      this._clients.set(clientId, ws);
 
-      this._clients.push(ws);
+      this.emit(WatchServer.CLIENT_CONNECTED, clientId);
 
       ws.on('close', () => {
-        this._clients = this._clients.filter(c => c !== client);
         ws.removeAllListeners();
+        this._clients.delete(clientId)
+        this.emit(WatchServer.CLIENT_DISCONNECTED, clientId);
       });
 
       setTimeout(() => {
         // Terminate the connection if the client has not authenticated within set timeout
         if (!client.isAuthenticated()) {
           client.close();
-          this._clients = this._clients.filter(c => c !== client);
+          this._clients.delete(clientId);
         }
       }, AUTH_TIMEOUT);
     });
+  }
+
+  getClients() {
+    return Array.from(this._clients.keys());
+  }
+
+  getConnectionCount() {
+    return this._clients.size;
   }
 
   /**
@@ -165,5 +186,8 @@ class WatchServer {
     });
   }
 }
+
+WatchServer.CLIENT_CONNECTED = 'clientConnected';
+WatchServer.CLIENT_DISCONNECTED = 'clientDisconnected';
 
 module.exports = WatchServer;
