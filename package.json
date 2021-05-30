@@ -16,7 +16,7 @@
     "convict": "^6.0.0",
     "mqtt": "^4.1.0",
     "uuid": "^8.2.0",
-    "ws": "^7.3.1"
+    "ws": "^7.4.6"
   },
   "devDependencies": {
     "nodemon": "^2.0.4"
