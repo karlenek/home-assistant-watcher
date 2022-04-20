@@ -13,7 +13,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "convict": "^6.0.0",
+    "convict": "^6.2.2",
     "mqtt": "^4.1.0",
     "uuid": "^8.2.0",
     "ws": "^7.3.1"
